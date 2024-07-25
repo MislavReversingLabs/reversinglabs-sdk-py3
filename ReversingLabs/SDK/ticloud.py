@@ -3362,7 +3362,7 @@ class DynamicAnalysis(TiCloudAPI):
         if not is_archive:
             if analysis_id:
                 if not isinstance(analysis_id, str):
-                    raise WrongInputError("analysis_id parameter bust be string.")
+                    raise WrongInputError("analysis_id parameter must be string.")
 
                 endpoint = "{endpoint}/{analysis_id}".format(
                     endpoint=endpoint,
