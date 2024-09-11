@@ -2639,10 +2639,12 @@ class FileUpload(TiCloudAPI):
             :param subscribe: if the value is 'data_change' this parameter adds the sample to the user's
             data change feed subscription list
             :type subscribe: str
-            :param archive_type: used to define the compression algorithm if sending an archive file;
+            :param archive_type: use only if the archive is protected;
+            used to define the compression algorithm of the protected archive file;
             supported values: 'zip'
             :type archive_type: str
-            :param archive_password: the password for extracting the content of the archive
+            :param archive_password: use only if the archive is protected;
+            the password for extracting the content of the archive
             :type archive_password: str
             :return: response
             :rtype: requests.Response
@@ -2684,10 +2686,12 @@ class FileUpload(TiCloudAPI):
             :param subscribe: if the value is 'data_change' this parameter adds the sample to the user's
             data change feed subscription list
             :type subscribe: str
-            :param archive_type: used to define the compression algorithm if sending an archive file;
+            :param archive_type: use only if the archive is protected;
+            used to define the compression algorithm of the protected archive file;
             supported values: 'zip'
             :type archive_type: str
-            :param archive_password: the password for extracting the content of the archive
+            :param archive_password: use only if the archive is protected;
+            the password for extracting the content of the archive
             :type archive_password: str
             :return: response
             :rtype: requests.Response
