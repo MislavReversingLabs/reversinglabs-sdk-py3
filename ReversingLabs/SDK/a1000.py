@@ -74,7 +74,8 @@ class A1000(object):
                    "identification_name", "identification_version", "file_size", "extracted_file_count",
                    "local_first_seen", "local_last_seen", "classification_origin", "classification_reason",
                    "classification_source", "classification", "riskscore", "classification_result", "ticore", "tags",
-                   "summary", "ticloud", "aliases", "networkthreatintelligence", "domainthreatintelligence"
+                   "summary", "ticloud", "aliases", "networkthreatintelligence", "domainthreatintelligence", "imphash",
+                   "discussion", "proposed_filename", "av_scanners", "av_scanners_summary"
                    )
 
     __TITANIUM_CORE_FIELDS = "sha1, sha256, sha512, md5, imphash, info, application, protection, security, behaviour," \
