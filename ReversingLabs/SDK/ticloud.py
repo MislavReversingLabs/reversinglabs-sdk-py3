@@ -727,7 +727,7 @@ class RHA1FunctionalSimilarity(TiCloudAPI):
         self._url = "{host}{{endpoint}}".format(host=self._host)
 
     def get_similar_hashes(self, hash_input, extended_results=True, classification=None, page_sha1=None,
-                           results_per_page=1000):
+                           results_per_page=1000, rha1_type=None):
         """Accepts a hash string and returns a response.
         This method returns only one page of results per call and accepts defining
         the specific page that will be returned by stating its first SHA-1 hash in the result list.
@@ -742,6 +742,9 @@ class RHA1FunctionalSimilarity(TiCloudAPI):
             :type page_sha1: hash
             :param results_per_page: limit the number of result entries; default and maximum is 1000
             :type results_per_page: int
+            :param rha1_type: measure of RHA1 precision level; check API documentation for available values;
+            leaving the parameter as None will result in automatic RHA1 type calculation
+            :type rha1_type: str
             :return: response
             :rtype: requests.Response
         """
@@ -758,15 +761,16 @@ class RHA1FunctionalSimilarity(TiCloudAPI):
         if extended_results not in ("true", "false"):
             raise WrongInputError("extended_results parameter must be boolean.")
 
-        rha1_type = get_rha1_type(
-            host=self._host,
-            username=self._username,
-            password=self._password,
-            verify=self._verify,
-            hash_input=hash_input,
-            allow_none_return=self._allow_none_return,
-            user_agent=self._headers.get("User-Agent")
-        )
+        if not rha1_type:
+            rha1_type = get_rha1_type(
+                host=self._host,
+                username=self._username,
+                password=self._password,
+                verify=self._verify,
+                hash_input=hash_input,
+                allow_none_return=self._allow_none_return,
+                user_agent=self._headers.get("User-Agent")
+            )
 
         endpoint_base = self.__SINGLE_QUERY_ENDPOINT.format(
             rha1_type=rha1_type,
@@ -813,7 +817,7 @@ class RHA1FunctionalSimilarity(TiCloudAPI):
         return response
 
     def get_similar_hashes_aggregated(self, hash_input, extended_results=True, classification=None,
-                                      results_per_page=1000, max_results=None):
+                                      results_per_page=1000, max_results=None, rha1_type=None):
         """ This method accepts a hash string and returns a list of results aggregated throughout the pages.
         A maximum number of desired results can be defined with the 'max_results' parameter.
             :param hash_input: sha1 hash string
@@ -827,6 +831,9 @@ class RHA1FunctionalSimilarity(TiCloudAPI):
             :param max_results: number of results to be returned in the list;
             set as integer to receive a defined number of results or leave as None to receive all available results
             :type max_results: int or None
+            :param rha1_type: measure of RHA1 precision level; check API documentation for available values;
+            leaving the parameter as None will result in automatic RHA1 type calculation
+            :type rha1_type: str
             :return: list of results
             :rtype: list
         """
@@ -839,7 +846,8 @@ class RHA1FunctionalSimilarity(TiCloudAPI):
                 extended_results=extended_results,
                 classification=classification,
                 page_sha1=next_page_sha1,
-                results_per_page=results_per_page
+                results_per_page=results_per_page,
+                rha1_type=rha1_type
             )
 
             response_json = response.json()
@@ -872,12 +880,15 @@ class RHA1Analytics(TiCloudAPI):
 
         self._url = "{host}{{endpoint}}".format(host=self._host)
 
-    def get_rha1_analytics(self, hash_input, extended_results=True):
+    def get_rha1_analytics(self, hash_input, extended_results=True, rha1_type=None):
         """Accepts a SHA-1 hash string and returns a response.
             :param hash_input: sha1 hash string or list of sha1 strings
             :type hash_input: str or list[str]
             :param extended_results: show extended response
             :type extended_results: bool
+            :param rha1_type: measure of RHA1 precision level; check API documentation for available values;
+            leaving the parameter as None will result in automatic RHA1 type calculation
+            :type rha1_type: str
             :return: response
             :rtype: requests.Response
         """
@@ -891,15 +902,16 @@ class RHA1Analytics(TiCloudAPI):
                 allowed_hash_types=(SHA1,)
             )
 
-            rha1_type = get_rha1_type(
-                host=self._host,
-                username=self._username,
-                password=self._password,
-                verify=self._verify,
-                hash_input=hash_input,
-                allow_none_return=self._allow_none_return,
-                user_agent=self._headers.get("User-Agent")
-            )
+            if not rha1_type:
+                rha1_type = get_rha1_type(
+                    host=self._host,
+                    username=self._username,
+                    password=self._password,
+                    verify=self._verify,
+                    hash_input=hash_input,
+                    allow_none_return=self._allow_none_return,
+                    user_agent=self._headers.get("User-Agent")
+                )
 
             endpoint = self.__SINGLE_QUERY_ENDPOINT.format(
                 rha1_type=rha1_type,
@@ -917,15 +929,16 @@ class RHA1Analytics(TiCloudAPI):
                 allowed_hash_types=(SHA1,)
             )
 
-            rha1_type = get_rha1_type(
-                host=self._host,
-                username=self._username,
-                password=self._password,
-                verify=self._verify,
-                hash_input=hash_input[0],
-                allow_none_return=self._allow_none_return,
-                user_agent=self._headers.get("User-Agent")
-            )
+            if not rha1_type:
+                rha1_type = get_rha1_type(
+                    host=self._host,
+                    username=self._username,
+                    password=self._password,
+                    verify=self._verify,
+                    hash_input=hash_input[0],
+                    allow_none_return=self._allow_none_return,
+                    user_agent=self._headers.get("User-Agent")
+                )
 
             url = "{host}{endpoint}".format(
                 host=self._host,
