@@ -3283,6 +3283,9 @@ class DynamicAnalysis(TiCloudAPI):
             url = self._url.format(endpoint=self.__DETONATE_ENDPOINT)
 
         else:
+            if not isinstance(is_archive, bool):
+                raise WrongInputError("is_archive parameter must be boolean.")
+
             url = self._url.format(endpoint=self.__DETONATE_ARCHIVE_ENDPOINT)
 
         response = self._post_request(
