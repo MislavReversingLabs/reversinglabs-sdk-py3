@@ -3175,12 +3175,16 @@ class DynamicAnalysis(TiCloudAPI):
 
         self._url = "{host}{{endpoint}}".format(host=self._host)
 
-    def detonate_url(self, url_string, platform):
+    def detonate_url(self, url_string, platform, **optional_parameters):
         """Submits a URL for dynamic analysis and returns processing info.
             :param url_string: URL string
             :type url_string: str
             :param platform: desired platform on which the sample or archive will be detonated; see available platforms
             :type platform: str
+            :param optional_parameters: optional key-value parameters;
+            possible options for keys are geolocation and locale; see official API documentation for possible
+            options for values; usage example is geolocation='us', locale='en-US';
+            :type optional_parameters: any
             :return: response
             :rtype: requests.Response
         """
@@ -3190,12 +3194,13 @@ class DynamicAnalysis(TiCloudAPI):
         response = self.__detonate(
             url_string=url_string,
             platform=platform,
+            optional_parameters=optional_parameters
         )
         
         return response
 
     def detonate_sample(self, sample_hash=None, platform=None, is_archive=False, internet_simulation=False,
-                        sample_name=None, sample_sha1=None):
+                        sample_name=None, sample_sha1=None, **optional_parameters):
         """Submits a sample or a file archive available in the cloud for dynamic analysis and returns processing info.
             :param sample_hash: SHA1, MD5 or SHA256 hash of the sample or archive
             :type sample_hash: str
@@ -3204,15 +3209,26 @@ class DynamicAnalysis(TiCloudAPI):
             :param is_archive: needs to be set to True if a file archive is being detonated;
             currently supported archive types: .zip
             :type is_archive: bool
-            :param internet_simulation: perform the dynamic analysis without connecting to the internet
-            :type internet_simulation: bool
-            :param sample_name: custom name for the sample
+            :param internet_simulation: perform the dynamic analysis without connecting to the internet;
+             possible values are True, False or 'true' (DEPRECATED)
+            :type internet_simulation: bool or str
+            :param sample_name: custom name for the sample (DEPRECATED)
             :type sample_name: str
             :param sample_sha1: SHA1 hash of the sample or archive (DEPRECATED)
             :type sample_sha1: str
+            :param optional_parameters: optional key-value parameters;
+            possible options for keys are internet_simulation, sample_name, geolocation and locale;
+            see official API documentation for possible options for values;
+            usage example is sample_name='Sample1', internet_simulation='true', geolocation='us', locale='en-US';
+            :type optional_parameters: any
             :return: response
             :rtype: requests.Response
         """
+        if internet_simulation or sample_name:
+            warn("DEPRECATION WARNING - Parameters internet_simulation and sample_name will soon be removed. "
+                 "Start using them the same way through optional_parameters, with the difference in "
+                 "internet_simulation being exclusively a string parameter.", Warning)
+
         if sample_hash:
             validate_hashes(
                 hash_input=[sample_hash],
@@ -3240,13 +3256,14 @@ class DynamicAnalysis(TiCloudAPI):
             platform=platform,
             is_archive=is_archive,
             internet_simulation=internet_simulation,
-            sample_name=sample_name
+            sample_name=sample_name,
+            optional_parameters=optional_parameters
         )
 
         return response
 
     def __detonate(self, platform, sample_hash=None, url_string=None, is_archive=False, internet_simulation=False,
-                   sample_name=None):
+                   sample_name=None, optional_parameters=None):
         """Submits a sample, a file archive available in the cloud or a URL for 
         dynamic analysis and returns processing info.
         This is a private method for all dynamic analysis submission methods.
@@ -3260,7 +3277,7 @@ class DynamicAnalysis(TiCloudAPI):
             currently supported archive types: .zip
             :type is_archive: bool
             :param internet_simulation: perform the dynamic analysis without connecting to the internet
-            :type internet_simulation: bool
+            :type internet_simulation: bool or str
             :param sample_name: custom name for the sample
             :type sample_name: str
             :return: response
@@ -3272,25 +3289,24 @@ class DynamicAnalysis(TiCloudAPI):
 
         post_json = {"rl": {"platform": platform, "response_format": "json"}}
 
-        if not isinstance(internet_simulation, bool):
-            raise WrongInputError("internet_simulation parameter must be boolean.")
-
         if sample_hash:
             hash_type = HASH_LENGTH_MAP.get(len(sample_hash))
             post_json["rl"][hash_type] = sample_hash
 
-            optional_parameters = []
-
             if sample_name:
-                optional_parameters.append(f"sample_name={sample_name}")
+                optional_parameters["sample_name"] = sample_name
 
-            if internet_simulation:
-                optional_parameters.append("internet_simulation=true")
-
-            post_json["rl"]["optional_parameters"] = ", ".join(optional_parameters)
+            if internet_simulation in (True, "true"):
+                optional_parameters["internet_simulation"] = "true"
 
         elif url_string:
             post_json["rl"]["url"] = url_string
+
+        optional = []
+
+        for k, v in optional_parameters.items():
+            optional.append(f"{k}={v}")
+            post_json["rl"]["optional_parameters"] = ", ".join(optional)
 
         if not is_archive:
             url = self._url.format(endpoint=self.__DETONATE_ENDPOINT)
