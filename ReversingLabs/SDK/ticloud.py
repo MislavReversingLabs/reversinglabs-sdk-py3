@@ -11,11 +11,10 @@ import hashlib
 import json
 import os
 import requests
-from warnings import warn
 
 from ReversingLabs.SDK.helper import ADVANCED_SEARCH_SORTING_CRITERIA, DEFAULT_USER_AGENT, HASH_LENGTH_MAP, \
     RESPONSE_CODE_ERROR_MAP, MD5, SHA1, SHA256, SHA512, NoFileTypeError, NotFoundError, \
-    WrongInputError, validate_hashes
+    WrongInputError, validate_hashes, deprecated_args
 
 
 XML = "xml"
@@ -3199,8 +3198,8 @@ class DynamicAnalysis(TiCloudAPI):
         
         return response
 
-    def detonate_sample(self, sample_hash=None, platform=None, is_archive=False, internet_simulation=False,
-                        sample_name=None, sample_sha1=None, **optional_parameters):
+    @deprecated_args(dpr_args=["internet_simulation", "sample_name", "sample_sha1"])
+    def detonate_sample(self, sample_hash=None, platform=None, is_archive=False, **optional_parameters):
         """Submits a sample or a file archive available in the cloud for dynamic analysis and returns processing info.
             :param sample_hash: SHA1, MD5 or SHA256 hash of the sample or archive
             :type sample_hash: str
@@ -3209,13 +3208,6 @@ class DynamicAnalysis(TiCloudAPI):
             :param is_archive: needs to be set to True if a file archive is being detonated;
             currently supported archive types: .zip
             :type is_archive: bool
-            :param internet_simulation: perform the dynamic analysis without connecting to the internet;
-             possible values are True, False or 'true' (DEPRECATED)
-            :type internet_simulation: bool or str
-            :param sample_name: custom name for the sample (DEPRECATED)
-            :type sample_name: str
-            :param sample_sha1: SHA1 hash of the sample or archive (DEPRECATED)
-            :type sample_sha1: str
             :param optional_parameters: optional key-value parameters;
             possible options for keys are internet_simulation, sample_name, geolocation and locale;
             see official API documentation for possible options for values;
@@ -3224,46 +3216,27 @@ class DynamicAnalysis(TiCloudAPI):
             :return: response
             :rtype: requests.Response
         """
-        if internet_simulation or sample_name:
-            warn("DEPRECATION WARNING - Parameters internet_simulation and sample_name will soon be removed. "
-                 "Start using them the same way through optional_parameters, with the difference in "
-                 "internet_simulation being exclusively a string parameter.", Warning)
+        if "sample_sha1" in optional_parameters:
+            if not sample_hash:
+                sample_hash = optional_parameters.get("sample_sha1")
 
-        if sample_hash:
-            validate_hashes(
-                hash_input=[sample_hash],
-                allowed_hash_types=(SHA1, SHA256, MD5)
-            )
+            del optional_parameters["sample_sha1"]
 
-        elif sample_sha1:
-            warn("DEPRECATION WARNING - Parameter sample_sha1 will soon be removed. Use sample_hash instead", Warning)
-
-            validate_hashes(
-                hash_input=[sample_sha1],
-                allowed_hash_types=(SHA1,)
-            )
-
-            sample_hash = sample_sha1
-
-        else:
-            raise WrongInputError("A hash parameter needs provided: sample_hash or sample_sha1 (deprecated)")
-
-        if not platform:
-            raise WrongInputError("The platform parameter needs to be provided.")
+        validate_hashes(
+            hash_input=[sample_hash],
+            allowed_hash_types=(SHA1, SHA256, MD5)
+        )
 
         response = self.__detonate(
             sample_hash=sample_hash,
             platform=platform,
             is_archive=is_archive,
-            internet_simulation=internet_simulation,
-            sample_name=sample_name,
             optional_parameters=optional_parameters
         )
 
         return response
 
-    def __detonate(self, platform, sample_hash=None, url_string=None, is_archive=False, internet_simulation=False,
-                   sample_name=None, optional_parameters=None):
+    def __detonate(self, platform, sample_hash=None, url_string=None, is_archive=False, optional_parameters=None):
         """Submits a sample, a file archive available in the cloud or a URL for 
         dynamic analysis and returns processing info.
         This is a private method for all dynamic analysis submission methods.
@@ -3276,10 +3249,6 @@ class DynamicAnalysis(TiCloudAPI):
             :param is_archive: needs to be set to True if a file archive is being detonated;
             currently supported archive types: .zip
             :type is_archive: bool
-            :param internet_simulation: perform the dynamic analysis without connecting to the internet
-            :type internet_simulation: bool or str
-            :param sample_name: custom name for the sample
-            :type sample_name: str
             :return: response
             :rtype: requests.Response
         """
@@ -3293,19 +3262,13 @@ class DynamicAnalysis(TiCloudAPI):
             hash_type = HASH_LENGTH_MAP.get(len(sample_hash))
             post_json["rl"][hash_type] = sample_hash
 
-            if sample_name:
-                optional_parameters["sample_name"] = sample_name
-
-            if internet_simulation in (True, "true"):
-                optional_parameters["internet_simulation"] = "true"
-
         elif url_string:
             post_json["rl"]["url"] = url_string
 
         optional = []
 
         for k, v in optional_parameters.items():
-            optional.append(f"{k}={v}")
+            optional.append(f"{k}={str(v).lower() if k == 'internet_simulation' else v}")
             post_json["rl"]["optional_parameters"] = ", ".join(optional)
 
         if not is_archive:
